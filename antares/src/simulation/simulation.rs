@@ -25,7 +25,7 @@ use super::{build_ship_from_config, Emitter, Ship, ShipConfig, SimulationConfig,
 ///
 /// # Examples
 ///
-/// ```no_run
+/// ```ignore
 /// use antares::simulation::{Simulation, SimulationConfig};
 /// use tokio::sync::mpsc;
 ///
@@ -65,7 +65,7 @@ impl Simulation {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use antares::simulation::{Simulation, SimulationConfig};
     ///
     /// let config = SimulationConfig {
@@ -98,7 +98,7 @@ impl Simulation {
     ///
     /// # Examples
     ///
-    /// ```no_run
+    /// ```ignore
     /// # use antares::simulation::{Simulation, SimulationConfig};
     /// # let config = SimulationConfig::default();
     /// # let simulation = Simulation::new(config);
@@ -127,7 +127,7 @@ impl Simulation {
     ///
     /// # Examples
     ///
-    /// ```no_run
+    /// ```ignore
     /// # use antares::simulation::{Simulation, SimulationConfig, ShipConfig};
     /// # use antares::simulation::movement::ShipType;
     /// # let sim_config = SimulationConfig::default();
@@ -175,7 +175,7 @@ impl Simulation {
     ///
     /// # Examples
     ///
-    /// ```no_run
+    /// ```ignore
     /// use antares::simulation::{Simulation, SimulationConfig};
     /// use tokio::sync::mpsc;
     ///

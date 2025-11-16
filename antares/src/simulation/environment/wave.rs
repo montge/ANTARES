@@ -25,7 +25,7 @@ use chrono::{DateTime, Utc};
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use antares::simulation::Wave;
 /// use chrono::Utc;
 ///

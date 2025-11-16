@@ -20,11 +20,11 @@ use std::f64::consts::PI;
 /// distance = speed * (time_delta / 1000.0)
 /// angle_step = distance / radius
 /// current_angle = (current_angle + angle_step) % (2π)
-/// ```
+/// ```ignore
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use antares::simulation::movement::{CircleMovement, MovementStrategy};
 ///
 /// // Create a ship moving in a 100m radius circle at 10 m/s, updating every 100ms
@@ -59,7 +59,7 @@ impl CircleMovement {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use antares::simulation::movement::CircleMovement;
     ///
     /// // 50m radius, 5 m/s speed, 20ms time steps

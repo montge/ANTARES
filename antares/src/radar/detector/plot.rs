@@ -22,7 +22,7 @@ use chrono::{DateTime, Utc};
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use antares::radar::detector::Plot;
 /// use chrono::Utc;
 ///

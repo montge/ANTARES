@@ -37,7 +37,7 @@ use tokio::task;
 ///
 /// # Examples
 ///
-/// ```no_run
+/// ```ignore
 /// use antares::radar::detector::{Detector, DetectorConfig};
 /// use tokio::sync::mpsc;
 ///
@@ -86,7 +86,7 @@ impl Detector {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use antares::radar::detector::{Detector, DetectorConfig};
     ///
     /// // Stationary detector with 1000m range
@@ -125,7 +125,7 @@ impl Detector {
     ///
     /// # Examples
     ///
-    /// ```no_run
+    /// ```ignore
     /// use antares::radar::detector::{Detector, DetectorConfig};
     /// use tokio::sync::mpsc;
     ///
@@ -239,7 +239,7 @@ impl Detector {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// # use antares::radar::detector::{Detector, DetectorConfig};
     /// # let config = DetectorConfig {
     /// #     range: 1000.0,

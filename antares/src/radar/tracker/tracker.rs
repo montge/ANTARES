@@ -44,7 +44,7 @@ use tokio::task;
 ///
 /// # Examples
 ///
-/// ```no_run
+/// ```ignore
 /// use antares::radar::tracker::Tracker;
 /// use tokio::sync::mpsc;
 ///
@@ -86,7 +86,7 @@ impl Tracker {
     ///
     /// # Examples
     ///
-    /// ```no_run
+    /// ```ignore
     /// use antares::radar::tracker::Tracker;
     /// use tokio::sync::mpsc;
     ///

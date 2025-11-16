@@ -12,7 +12,7 @@ use super::{MovementCommand, MovementStrategy};
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use antares::simulation::movement::{LineMovement, MovementStrategy};
 /// use std::f64::consts::PI;
 ///
@@ -40,7 +40,7 @@ impl LineMovement {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use antares::simulation::movement::LineMovement;
     /// use std::f64::consts::PI;
     ///

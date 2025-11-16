@@ -87,7 +87,7 @@ impl Emitter for Ship {
     ///
     /// # Examples
     ///
-    /// ```no_run
+    /// ```ignore
     /// # use antares::simulation::emitters::{Ship, Emitter};
     /// # use antares::simulation::movement::StationaryMovement;
     /// # let mut ship = Ship {

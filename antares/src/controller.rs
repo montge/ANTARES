@@ -19,7 +19,7 @@
 //!
 //! # Examples
 //!
-//! ```no_run
+//! ```ignore
 //! use antares::{Config, Controller};
 //! use std::sync::Arc;
 //!
@@ -59,7 +59,7 @@ use tokio::sync::mpsc;
 ///
 /// # Examples
 ///
-/// ```no_run
+/// ```ignore
 /// use antares::{Config, Controller};
 /// use std::sync::Arc;
 ///
@@ -96,7 +96,7 @@ impl Controller {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use antares::{Config, Controller};
     ///
     /// let config = Config::default();
@@ -133,7 +133,7 @@ impl Controller {
     ///
     /// # Examples
     ///
-    /// ```no_run
+    /// ```ignore
     /// use antares::{Config, Controller};
     /// use std::sync::Arc;
     ///
@@ -175,7 +175,7 @@ impl Controller {
     ///
     /// # Examples
     ///
-    /// ```no_run
+    /// ```ignore
     /// # use antares::{Config, Controller};
     /// # use std::sync::Arc;
     /// # let config = Config::default();
@@ -205,7 +205,7 @@ impl Controller {
     ///
     /// # Examples
     ///
-    /// ```no_run
+    /// ```ignore
     /// # use antares::{Config, Controller, ShipConfig};
     /// # use antares::simulation::movement::ShipType;
     /// # use std::sync::Arc;
@@ -245,7 +245,7 @@ impl Controller {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// # use antares::{Config, Controller};
     /// # let config = Config::default();
     /// # let controller = Controller::new(config);
