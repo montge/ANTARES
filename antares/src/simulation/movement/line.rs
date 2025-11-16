@@ -19,3 +19,69 @@ impl MovementStrategy for LineMovement {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::f64::consts::PI;
+
+    #[test]
+    fn test_line_movement_creates_with_given_values() {
+        let movement = LineMovement::new(PI / 4.0, 10.0);
+        assert_eq!(movement.angle, PI / 4.0);
+        assert_eq!(movement.speed, 10.0);
+    }
+
+    #[test]
+    fn test_line_movement_returns_constant_values() {
+        let mut movement = LineMovement::new(PI / 2.0, 15.0);
+
+        // Call multiple times - should always return same values
+        let cmd1 = movement.next_movement();
+        let cmd2 = movement.next_movement();
+        let cmd3 = movement.next_movement();
+
+        assert_eq!(cmd1.angle, PI / 2.0);
+        assert_eq!(cmd1.speed, 15.0);
+        assert_eq!(cmd2.angle, PI / 2.0);
+        assert_eq!(cmd2.speed, 15.0);
+        assert_eq!(cmd3.angle, PI / 2.0);
+        assert_eq!(cmd3.speed, 15.0);
+    }
+
+    #[test]
+    fn test_line_movement_with_zero_speed() {
+        let mut movement = LineMovement::new(0.0, 0.0);
+        let cmd = movement.next_movement();
+
+        assert_eq!(cmd.angle, 0.0);
+        assert_eq!(cmd.speed, 0.0);
+    }
+
+    #[test]
+    fn test_line_movement_with_full_rotation() {
+        let mut movement = LineMovement::new(2.0 * PI, 5.0);
+        let cmd = movement.next_movement();
+
+        assert_eq!(cmd.angle, 2.0 * PI);
+        assert_eq!(cmd.speed, 5.0);
+    }
+
+    #[test]
+    fn test_line_movement_with_negative_angle() {
+        let mut movement = LineMovement::new(-PI / 4.0, 10.0);
+        let cmd = movement.next_movement();
+
+        assert_eq!(cmd.angle, -PI / 4.0);
+        assert_eq!(cmd.speed, 10.0);
+    }
+
+    #[test]
+    fn test_line_movement_with_high_speed() {
+        let mut movement = LineMovement::new(PI, 1000.0);
+        let cmd = movement.next_movement();
+
+        assert_eq!(cmd.angle, PI);
+        assert_eq!(cmd.speed, 1000.0);
+    }
+}
