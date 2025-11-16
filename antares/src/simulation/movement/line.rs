@@ -1,11 +1,51 @@
 use super::{MovementCommand, MovementStrategy};
 
+/// Linear movement strategy with constant heading and speed
+///
+/// Ships using this strategy move in a straight line at a constant speed and angle.
+/// This is the simplest movement pattern, useful for simulating ships on a steady course.
+///
+/// # Parameters
+///
+/// - `angle`: Movement direction in radians (0 = East, π/2 = North, π = West, 3π/2 = South)
+/// - `speed`: Movement speed in meters per second (m/s)
+///
+/// # Examples
+///
+/// ```
+/// use antares::simulation::movement::{LineMovement, MovementStrategy};
+/// use std::f64::consts::PI;
+///
+/// // Create a ship moving north at 10 m/s
+/// let mut movement = LineMovement::new(PI / 2.0, 10.0);
+/// let cmd = movement.next_movement();
+///
+/// assert_eq!(cmd.angle, PI / 2.0);
+/// assert_eq!(cmd.speed, 10.0);
+/// ```
 pub struct LineMovement {
+    /// Movement direction in radians
     angle: f64,
+    /// Movement speed in meters per second
     speed: f64,
 }
 
 impl LineMovement {
+    /// Creates a new linear movement strategy
+    ///
+    /// # Arguments
+    ///
+    /// * `angle` - Movement direction in radians
+    /// * `speed` - Movement speed in meters per second
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use antares::simulation::movement::LineMovement;
+    /// use std::f64::consts::PI;
+    ///
+    /// let movement = LineMovement::new(PI / 4.0, 15.0); // Northeast at 15 m/s
+    /// ```
     pub fn new(angle: f64, speed: f64) -> Self {
         LineMovement { angle, speed }
     }

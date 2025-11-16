@@ -1,14 +1,70 @@
 use super::{MovementCommand, MovementStrategy};
 use std::f64::consts::PI;
 
+/// Circular movement strategy for patrol patterns
+///
+/// Ships using this strategy move in a circle at constant speed. The angle increments
+/// each time step based on the arc length traveled divided by the radius, maintaining
+/// mathematically correct circular motion.
+///
+/// # Parameters
+///
+/// - `radius`: Circle radius in meters
+/// - `speed`: Movement speed in meters per second (m/s)
+/// - `time_delta`: Time step in milliseconds between updates
+///
+/// # Physics
+///
+/// The angle increment per time step is calculated as:
+/// ```text
+/// distance = speed * (time_delta / 1000.0)
+/// angle_step = distance / radius
+/// current_angle = (current_angle + angle_step) % (2π)
+/// ```
+///
+/// # Examples
+///
+/// ```
+/// use antares::simulation::movement::{CircleMovement, MovementStrategy};
+///
+/// // Create a ship moving in a 100m radius circle at 10 m/s, updating every 100ms
+/// let mut movement = CircleMovement::new(100.0, 10.0, 100);
+///
+/// // Each call advances the angle based on arc length
+/// let cmd1 = movement.next_movement();
+/// let cmd2 = movement.next_movement();
+///
+/// assert!(cmd2.angle > cmd1.angle); // Angle increases
+/// assert_eq!(cmd1.speed, 10.0); // Speed remains constant
+/// ```
 pub struct CircleMovement {
+    /// Movement speed in meters per second
     speed: f64,
+    /// Circle radius in meters
     radius: f64,
+    /// Time step in milliseconds
     time_delta: u64,
+    /// Current angle position in radians (0 to 2π)
     current_angle: f64,
 }
 
 impl CircleMovement {
+    /// Creates a new circular movement strategy
+    ///
+    /// # Arguments
+    ///
+    /// * `radius` - Circle radius in meters (must be > 0)
+    /// * `speed` - Movement speed in meters per second
+    /// * `time_delta` - Time step in milliseconds between movement updates
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use antares::simulation::movement::CircleMovement;
+    ///
+    /// // 50m radius, 5 m/s speed, 20ms time steps
+    /// let movement = CircleMovement::new(50.0, 5.0, 20);
+    /// ```
     pub fn new(radius: f64, speed: f64, time_delta: u64) -> Self {
         CircleMovement {
             speed,
