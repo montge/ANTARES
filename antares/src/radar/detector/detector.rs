@@ -4,15 +4,100 @@ use chrono::{DateTime, Utc};
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::task;
 
+/// Radar detector for tracking ship positions and generating plots
+///
+/// The detector receives wave emissions from ships in the simulation environment
+/// and converts them into radar plots with range, azimuth, and geographic coordinates.
+/// It supports both stationary and moving detector platforms.
+///
+/// # Detection Algorithm
+///
+/// 1. **Wave Reception**: Receives wave emissions from ships via channel
+/// 2. **Range/Azimuth Calculation**: Computes polar coordinates relative to detector
+/// 3. **Range Filtering**: Discards detections beyond configured range
+/// 4. **Coordinate Transformation**: Converts meter-based positions to lat/lng
+/// 5. **Plot Generation**: Creates radar plots with all calculated data
+///
+/// # Coordinate System
+///
+/// - **Position**: Cartesian coordinates in meters (x, y)
+/// - **Range**: Distance from detector in meters
+/// - **Azimuth**: Bearing from detector in radians (0 = East, π/2 = North)
+/// - **Geographic**: WGS84 coordinates (latitude, longitude in degrees)
+///
+/// # Moving Detector Support
+///
+/// The detector can simulate a moving platform by specifying speed and angle.
+/// The detector's position is calculated as:
+/// ```text
+/// time_delta = current_time - start_time (in seconds)
+/// x = speed * time_delta * cos(angle)
+/// y = speed * time_delta * sin(angle)
+/// ```
+///
+/// # Examples
+///
+/// ```no_run
+/// use antares::radar::detector::{Detector, DetectorConfig};
+/// use tokio::sync::mpsc;
+///
+/// #[tokio::main]
+/// async fn main() {
+///     // Stationary detector at coordinates (4.0°N, -72.0°W) with 1000m range
+///     let config = DetectorConfig {
+///         range: 1000.0,
+///         speed: 0.0,
+///         angle: 0.0,
+///         start_coordinates: (4.0, -72.0),
+///     };
+///     let detector = Detector::new(config);
+///
+///     let (wave_tx, wave_rx) = mpsc::channel(100);
+///     let (plot_tx, mut plot_rx) = mpsc::channel(100);
+///
+///     // Start detector processing
+///     detector.start(wave_rx, plot_tx);
+///
+///     // Detector will process waves and generate plots
+///     while let Some(plot) = plot_rx.recv().await {
+///         println!("Detected: range={:.1}m, azimuth={:.2}rad", plot.range, plot.azimuth);
+///     }
+/// }
+/// ```
 pub struct Detector {
+    /// Detection range in meters (ships beyond this range are not detected)
     pub range: f64,
+    /// Detector platform speed in meters per second (0 for stationary)
     pub speed: f64,
+    /// Detector platform movement direction in radians (0 = East, π/2 = North)
     pub angle: f64,
+    /// Starting geographic coordinates (latitude, longitude) in degrees
     pub start_coordinates: (f64, f64),
+    /// Detection start time (used for moving detector position calculation)
     pub start_time: DateTime<Utc>,
 }
 
 impl Detector {
+    /// Creates a new detector with the given configuration
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - Detector configuration containing range, speed, angle, and start coordinates
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use antares::radar::detector::{Detector, DetectorConfig};
+    ///
+    /// // Stationary detector with 1000m range
+    /// let config = DetectorConfig {
+    ///     range: 1000.0,
+    ///     speed: 0.0,
+    ///     angle: 0.0,
+    ///     start_coordinates: (4.0, -72.0),
+    /// };
+    /// let detector = Detector::new(config);
+    /// ```
     pub fn new(config: DetectorConfig) -> Detector {
         Detector {
             range: config.range,
@@ -23,6 +108,44 @@ impl Detector {
         }
     }
 
+    /// Starts the detector processing loop in a background task
+    ///
+    /// The detector will continuously receive waves from the `wave_receiver` channel,
+    /// calculate range and azimuth, filter by range, convert to geographic coordinates,
+    /// and send plots to the `plot_sender` channel.
+    ///
+    /// The task runs until either:
+    /// - The wave receiver channel is closed
+    /// - The plot sender channel is closed (receiver dropped)
+    ///
+    /// # Arguments
+    ///
+    /// * `wave_receiver` - Channel to receive wave emissions from ships
+    /// * `plot_sender` - Channel to send generated radar plots
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use antares::radar::detector::{Detector, DetectorConfig};
+    /// use tokio::sync::mpsc;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let config = DetectorConfig {
+    ///         range: 1000.0,
+    ///         speed: 0.0,
+    ///         angle: 0.0,
+    ///         start_coordinates: (4.0, -72.0),
+    ///     };
+    ///     let detector = Detector::new(config);
+    ///
+    ///     let (wave_tx, wave_rx) = mpsc::channel(100);
+    ///     let (plot_tx, plot_rx) = mpsc::channel(100);
+    ///
+    ///     detector.start(wave_rx, plot_tx);
+    ///     // Detector now processes waves in background
+    /// }
+    /// ```
     pub fn start(self, mut wave_receiver: Receiver<Wave>, plot_sender: Sender<Plot>) {
         task::spawn(async move {
             while let Some(wave) = wave_receiver.recv().await {
@@ -48,6 +171,35 @@ impl Detector {
         });
     }
 
+    /// Calculates range and azimuth from detector to wave position
+    ///
+    /// For a moving detector, the detector's current position is calculated based on
+    /// time elapsed since start, speed, and movement angle. The range and azimuth are
+    /// then calculated relative to this current position.
+    ///
+    /// # Algorithm
+    ///
+    /// ```text
+    /// detector_pos = (speed * time_delta * cos(angle), speed * time_delta * sin(angle))
+    /// delta = wave_position - detector_pos
+    /// range = sqrt(delta_x² + delta_y²)
+    /// azimuth = atan2(delta_y, delta_x)
+    /// ```
+    ///
+    /// # Arguments
+    ///
+    /// * `wave` - Wave emission containing ship position and timestamp
+    ///
+    /// # Returns
+    ///
+    /// Tuple of (range in meters, azimuth in radians)
+    ///
+    /// # Azimuth Convention
+    ///
+    /// - 0 rad (0°) = East
+    /// - π/2 rad (90°) = North
+    /// - π rad (180°) = West
+    /// - -π/2 rad (270°) = South
     fn calculate_range_azimuth(&self, wave: &Wave) -> (f64, f64) {
         let time_delta = (wave.timestamp - self.start_time).num_milliseconds() as f64 / 1000.0;
         let current_position = (
@@ -63,6 +215,42 @@ impl Detector {
         (range, azimuth)
     }
 
+    /// Converts meter-based coordinates to geographic lat/lng coordinates
+    ///
+    /// Uses a simple equirectangular approximation suitable for small distances:
+    /// - 1 degree latitude ≈ 111,320 meters (constant)
+    /// - 1 degree longitude ≈ 111,320 * cos(latitude) meters (varies with latitude)
+    ///
+    /// # Arguments
+    ///
+    /// * `position` - Position in meters as (x, y) where x is east and y is north
+    ///
+    /// # Returns
+    ///
+    /// Geographic coordinates as (latitude, longitude) in degrees
+    ///
+    /// # Accuracy
+    ///
+    /// This approximation is suitable for:
+    /// - Distances up to ~100 km
+    /// - Latitudes between -70° and 70°
+    ///
+    /// For larger distances or polar regions, use more sophisticated projections.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use antares::radar::detector::{Detector, DetectorConfig};
+    /// # let config = DetectorConfig {
+    /// #     range: 1000.0,
+    /// #     speed: 0.0,
+    /// #     angle: 0.0,
+    /// #     start_coordinates: (0.0, 0.0),
+    /// # };
+    /// # let detector = Detector::new(config);
+    /// // Move 111,320m north from equator (0, 0)
+    /// // Should result in approximately (1.0, 0.0)
+    /// ```
     fn meters_to_lat_lng(&self, position: (f64, f64)) -> (f64, f64) {
         let (lat, lng) = self.start_coordinates;
         let (dx, dy) = position;

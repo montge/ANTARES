@@ -4,9 +4,106 @@ use std::collections::HashMap;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::task;
 
+/// Radar tracker for converting plots into tracks with speed and course
+///
+/// The tracker receives radar plots from the detector and converts them into tracks
+/// by calculating speed and course from consecutive plot positions. It maintains
+/// state for each ship to enable differential calculations.
+///
+/// # Tracking Algorithm
+///
+/// 1. **First Plot**: When a ship is first detected, speed and course are set to 0
+/// 2. **Subsequent Plots**: Speed and course are calculated from position changes:
+///    - Convert polar coordinates to Cartesian (x, y)
+///    - Calculate position delta between plots
+///    - Speed = distance / time_delta
+///    - Course = direction of movement (radians)
+///
+/// # Speed Calculation
+///
+/// ```text
+/// old_pos = (old_range * cos(old_azimuth), old_range * sin(old_azimuth))
+/// new_pos = (new_range * cos(new_azimuth), new_range * sin(new_azimuth))
+/// delta = new_pos - old_pos
+/// distance = sqrt(delta_x² + delta_y²)
+/// speed = distance / time_delta  (in meters per second)
+/// ```
+///
+/// # Course Calculation
+///
+/// Course is the direction of movement in radians:
+/// ```text
+/// course = atan2(delta_y, delta_x)
+/// ```
+///
+/// Course uses the same convention as azimuth:
+/// - 0 rad = East
+/// - π/2 rad = North
+/// - π rad = West
+/// - -π/2 rad = South
+///
+/// # Examples
+///
+/// ```no_run
+/// use antares::radar::tracker::Tracker;
+/// use tokio::sync::mpsc;
+///
+/// #[tokio::main]
+/// async fn main() {
+///     let (plot_tx, plot_rx) = mpsc::channel(100);
+///     let (track_tx, mut track_rx) = mpsc::channel(100);
+///
+///     // Start tracker processing
+///     Tracker::start(plot_rx, track_tx);
+///
+///     // Tracker will process plots and generate tracks
+///     while let Some(track) = track_rx.recv().await {
+///         println!("Track {}: speed={:.1} m/s, course={:.2} rad",
+///                  track.id, track.speed, track.course);
+///     }
+/// }
+/// ```
 pub struct Tracker;
 
 impl Tracker {
+    /// Starts the tracker processing loop in a background task
+    ///
+    /// The tracker will continuously receive plots from the `plot_receiver` channel,
+    /// calculate speed and course from consecutive positions, and send tracks to
+    /// the `track_sender` channel.
+    ///
+    /// # State Management
+    ///
+    /// The tracker maintains a `HashMap` of the last plot for each ship ID. This
+    /// enables differential speed/course calculations:
+    /// - First plot for a ship: speed = 0, course = 0
+    /// - Subsequent plots: speed/course calculated from previous plot
+    ///
+    /// # Arguments
+    ///
+    /// * `plot_receiver` - Channel to receive radar plots from detector
+    /// * `track_sender` - Channel to send generated tracks
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use antares::radar::tracker::Tracker;
+    /// use tokio::sync::mpsc;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let (plot_tx, plot_rx) = mpsc::channel(100);
+    ///     let (track_tx, mut track_rx) = mpsc::channel(100);
+    ///
+    ///     Tracker::start(plot_rx, track_tx);
+    ///     // Tracker now processes plots in background
+    ///
+    ///     while let Some(track) = track_rx.recv().await {
+    ///         println!("Ship {}: {:.1} m/s at {:.0}°",
+    ///                  track.id, track.speed, track.course.to_degrees());
+    ///     }
+    /// }
+    /// ```
     pub fn start(mut plot_receiver: Receiver<Plot>, track_sender: Sender<Track>) {
         task::spawn(async move {
             let mut last_plot_by_id = HashMap::new();
@@ -56,6 +153,53 @@ impl Tracker {
         });
     }
 
+    /// Calculates speed and course from two consecutive plots
+    ///
+    /// Converts polar coordinates (range/azimuth) to Cartesian coordinates,
+    /// calculates the position delta, and derives speed (m/s) and course (radians).
+    ///
+    /// # Algorithm
+    ///
+    /// ```text
+    /// # Convert to Cartesian
+    /// old_x = old_range * cos(old_azimuth)
+    /// old_y = old_range * sin(old_azimuth)
+    /// new_x = new_range * cos(new_azimuth)
+    /// new_y = new_range * sin(new_azimuth)
+    ///
+    /// # Calculate delta
+    /// delta_x = new_x - old_x
+    /// delta_y = new_y - old_y
+    ///
+    /// # Calculate speed (m/s)
+    /// distance = sqrt(delta_x² + delta_y²)
+    /// speed = distance / time_delta
+    ///
+    /// # Calculate course (radians)
+    /// course = atan2(delta_y, delta_x)
+    /// ```
+    ///
+    /// # Arguments
+    ///
+    /// * `old_plot` - Previous plot for this ship
+    /// * `new_plot` - Current plot for this ship
+    ///
+    /// # Returns
+    ///
+    /// Tuple of (speed in m/s, course in radians)
+    ///
+    /// # Course Interpretation
+    ///
+    /// The course represents the direction the ship is moving:
+    /// - Ship moving east: course ≈ 0 rad
+    /// - Ship moving north: course ≈ π/2 rad
+    /// - Ship moving west: course ≈ π rad
+    /// - Ship moving south: course ≈ -π/2 rad
+    ///
+    /// Note: Course is the direction of movement, which may differ from
+    /// the ship's azimuth (position relative to detector). For example,
+    /// a ship at azimuth π (west of detector) moving toward the detector
+    /// will have course 0 (moving east).
     fn calculate_speed_vector(old_plot: &Plot, new_plot: &Plot) -> (f64, f64) {
         let time_diff = new_plot.timestamp - old_plot.timestamp;
         let delta_x =
