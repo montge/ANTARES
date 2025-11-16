@@ -60,7 +60,7 @@ export const addShip = async (controllerUrl: string, params: ShipParams): Promis
     }
   );
 
-  return response.ok;
+  return response?.ok ?? false;
 };
 
 /**
@@ -74,7 +74,7 @@ export const resetSimulation = async (controllerUrl: string): Promise<boolean> =
     { method: 'POST' }
   );
 
-  return response.ok;
+  return response?.ok ?? false;
 };
 
 /**
@@ -83,11 +83,22 @@ export const resetSimulation = async (controllerUrl: string): Promise<boolean> =
  * @returns Promise that resolves to the radar state data
  */
 export const fetchRadarState = async (controllerUrl: string): Promise<RadarState | null> => {
-  const response = await fetchWithErrorHandling(`${controllerUrl}/simulation/config`).then(res => res.json());
+  const response = await fetchWithErrorHandling(`${controllerUrl}/simulation/config`);
 
-  if (!response || !response.antares?.radar?.detector) {
+  if (!response) {
     return null;
   }
 
-  return response.antares.radar.detector as RadarState;
+  try {
+    const data = await response.json();
+
+    if (!data || !data.antares?.radar?.detector) {
+      return null;
+    }
+
+    return data.antares.radar.detector as RadarState;
+  } catch (error) {
+    console.error("Failed to parse radar state:", error);
+    return null;
+  }
 };
