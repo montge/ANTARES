@@ -4,7 +4,14 @@
 
 [antares.simulation]
 emission_interval = 20
-controller_bind_addr = "0.0.0.0:17394"
+
+# Bind address for the controller REST API
+# SECURITY NOTE:
+#   - "127.0.0.1:17394" = localhost only (SECURE for development)
+#   - "0.0.0.0:17394"   = all network interfaces (USE ONLY with firewall!)
+# Default is 127.0.0.1 for security. Change to 0.0.0.0 only in production
+# with proper firewall rules and authentication.
+controller_bind_addr = "127.0.0.1:17394"
 
 # ============================
 # Ships to add at startup
@@ -36,13 +43,34 @@ initial_position = [50.0, 50.0]
 # ============================
 
 [antares.radar]
-bind_addr = "0.0.0.0:17396"
+# Bind address for radar data broadcasting (TCP/WebSocket)
+# SECURITY NOTE: Same as controller_bind_addr - use 127.0.0.1 for localhost only
+bind_addr = "127.0.0.1:17396"
 
 [antares.radar.detector]
-range = 1000.0
-speed = 0.0
-angle = 0.0
-start_coordinates = [4.0, -72.0]
+range = 1000.0         # Maximum detection range in meters
+speed = 0.0            # Radar platform speed in m/s (0 = stationary)
+angle = 0.0            # Radar platform heading in radians
+start_coordinates = [4.0, -72.0]  # Starting lat/long position
 
 [antares.radar.broadcast]
-type = "tcp"
+type = "tcp"           # Broadcast type: "tcp" or "websocket"
+
+# ============================
+# Security Configuration
+# ============================
+
+[antares.security]
+# Allowed CORS origins (comma-separated list)
+# SECURITY CRITICAL:
+#   - "http://localhost:8080" = only allow local web UI (SECURE)
+#   - "http://localhost:8080,https://example.com" = multiple origins
+#   - "*" = allow ANY origin (DANGEROUS - never use in production!)
+#
+# Default: "http://localhost:8080" for security
+# Change this to match your web UI's actual URL(s)
+cors_allowed_origins = "http://localhost:8080"
+
+# Enable security headers (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection)
+# Recommended: true (provides defense-in-depth against common web attacks)
+enable_security_headers = true

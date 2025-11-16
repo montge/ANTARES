@@ -12,7 +12,8 @@ impl Default for RadarConfig {
         RadarConfig {
             detector: DetectorConfig::default(),
             broadcast: BroadcastConfig::default(),
-            bind_addr: "0.0.0.0:17396".into(),
+            // Default to localhost for security. Use 0.0.0.0 in production with proper firewall.
+            bind_addr: "127.0.0.1:17396".into(),
         }
     }
 }
